@@ -6,7 +6,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 import json
-import pymysql
 
 
 options = webdriver.ChromeOptions()
@@ -67,15 +66,7 @@ for search_keyword in search_keywords:
                     }
                     data.append(item)
                     break
-    inner_title = ''
-    new_data = []
-    for item in data:
-        if inner_title == item['title']:
-            new_data.append(item)
-            break
-        else:
-            inner_title = item['title']
     with open(f'news_phishing_{search_keyword}.json', 'w', encoding='utf-8') as f :
-        json.dump(new_data, f,ensure_ascii = False, indent = 4)
+        json.dump(data, f,ensure_ascii = False, indent = 4)
 
 driver.close()
