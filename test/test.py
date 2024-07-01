@@ -40,6 +40,11 @@ def process_text(text):
     return words
 
 
+def sort_dict_by_value(d):
+    return {k: v for k, v in sorted(d.items(), key=lambda item: item[1], reverse=True)}
+
+all_data = []
+
 for search_keyword in search_keywords:
     driver.get(f'https://search.naver.com/search.naver?where=news&query={search_keyword}&pd=4')
     driver.implicitly_wait(3)
@@ -66,6 +71,7 @@ for search_keyword in search_keywords:
     contents = driver.find_elements(By.CSS_SELECTOR, '.news_dsc .dsc_wrap > a')
     data = []
     seen_titles = set()
+    word_count_total = Counter()  # 모든 기사의 단어 출현 횟수를 누적할 Counter 객체
     for title, content in zip(titles, contents):
         if search_keyword in content.text:
             # black_keywords 중 하나라도 포함되면 해당 기사를 건너뜀
@@ -75,17 +81,25 @@ for search_keyword in search_keywords:
             if title.text in seen_titles:
                 continue
             link = title.get_dom_attribute('href')
+
             words = process_text(content.text)
             word_count = Counter(words)
+            word_count_total += word_count
+
             item = {
                 'search_keyword': search_keyword,
                 'title': title.text,
                 'content': content.text,
                 'link': link,
-                'count': dict(word_count)
+                # 'count': dict(word_count)
             }
             data.append(item)
             seen_titles.add(title.text)
+
+
+    # word_count_total을 단어 출현 횟수 기준으로 내림차순 정렬
+    sorted_word_count = sort_dict_by_value(dict(word_count_total))
+    data.append(sorted_word_count)
 
     with open(f'news_phishing_{search_keyword}.json', 'w', encoding='utf-8') as f :
         json.dump(data, f,ensure_ascii = False, indent = 4)
