@@ -26,6 +26,10 @@ driver = webdriver.Chrome(options=chrome_options)
 search_keywords = ['보이스피싱', '스미싱', '신종사기']
 black_keywords = ['예방', '감사장', 'AI', '시스템', '협약', '배상', '자율배상']
 
+exclude_count_words = ['장애인']  # 제외할 단어 목록
+exclude_count_lengths = [1]  # 제외할 단어 길이 목록
+exclude_count_ranges = [(1, 2)]  # 제외할 단어 출현 횟수 범위 목록
+
 java_home = os.environ.get('JAVA_HOME')
 jvm_path = getDefaultJVMPath()
 if not jvm_path:
@@ -35,6 +39,11 @@ okt = Okt(jvmpath=jvm_path)
 
 def process_text(text):
     words = okt.nouns(text)  # 명사만 추출
+    words = [
+        word for word in words
+        if word not in exclude_count_words and
+        len(word) not in exclude_count_lengths
+    ]
     return words
 
 
@@ -86,6 +95,11 @@ def set_data_to_array_and_get_word_count():
             }
             data.append(item)
             seen_titles.add(title.text)
+    # 출현 횟수가 제외 범위에 속하는 단어를 필터링
+    word_count_total = {
+        word: count for word, count in word_count_total.items()
+        if not any(start <= count <= end for start, end in exclude_count_ranges)
+    }
     return word_count_total
 
 
