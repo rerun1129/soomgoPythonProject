@@ -18,12 +18,10 @@ options = webdriver.ChromeOptions()
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_experimental_option('detach', True)
 
-
 # 설정 및 웹 페이지 열기
 path = 'C:/dev/chromedriver.exe'
-s= Service(path)
-driver = webdriver.Chrome(options = chrome_options)
-
+s = Service(path)
+driver = webdriver.Chrome(options=chrome_options)
 
 search_keywords = ['보이스피싱', '스미싱', '신종사기']
 black_keywords = ['예방', '감사장', 'AI', '시스템', '협약', '배상', '자율배상']
@@ -43,14 +41,9 @@ def process_text(text):
 def sort_dict_by_value(d):
     return {k: v for k, v in sorted(d.items(), key=lambda item: item[1], reverse=True)}
 
-all_data = []
 
-for search_keyword in search_keywords:
-    driver.get(f'https://search.naver.com/search.naver?where=news&query={search_keyword}&pd=4')
-    driver.implicitly_wait(3)
-    driver.maximize_window()
+def infinite_to_end_scrolling():
     before_h = driver.execute_script("return window.scrollY")  # 스크롤 전 높이
-
     # 무한 스크롤(반복문) 모바일 페이지에서만 현재 정상 동작함(웹 페이지에서는 막힘)
     while True:
         driver.find_element(By.CSS_SELECTOR, "body").send_keys(Keys.END)
@@ -65,17 +58,15 @@ for search_keyword in search_keywords:
 
         before_h = after_h
 
-    titles = driver.find_elements(By.CSS_SELECTOR, '.news_contents > a:nth-child(2)')
-    if not titles:
-        continue
-    contents = driver.find_elements(By.CSS_SELECTOR, '.news_dsc .dsc_wrap > a')
-    data = []
+
+def set_data_to_array_and_get_word_count():
     seen_titles = set()
     word_count_total = Counter()  # 모든 기사의 단어 출현 횟수를 누적할 Counter 객체
     for title, content in zip(titles, contents):
         if search_keyword in content.text:
             # black_keywords 중 하나라도 포함되면 해당 기사를 건너뜀
-            if any(word in content.text for word in black_keywords) or any(word in title.text for word in black_keywords):
+            if any(word in content.text for word in black_keywords) or any(
+                    word in title.text for word in black_keywords):
                 continue
                 # 제목이 이미 처리된 적이 있는 경우 건너뜀
             if title.text in seen_titles:
@@ -95,13 +86,27 @@ for search_keyword in search_keywords:
             }
             data.append(item)
             seen_titles.add(title.text)
+    return word_count_total
 
+
+for search_keyword in search_keywords:
+    driver.get(f'https://search.naver.com/search.naver?where=news&query={search_keyword}&pd=4')
+    driver.implicitly_wait(3)
+    driver.maximize_window()
+    infinite_to_end_scrolling()
+
+    titles = driver.find_elements(By.CSS_SELECTOR, '.news_contents > a:nth-child(2)')
+    if not titles:
+        continue
+    contents = driver.find_elements(By.CSS_SELECTOR, '.news_dsc .dsc_wrap > a')
+    data = []
+    word_count_result = set_data_to_array_and_get_word_count()
 
     # word_count_total을 단어 출현 횟수 기준으로 내림차순 정렬
-    sorted_word_count = sort_dict_by_value(dict(word_count_total))
+    sorted_word_count = sort_dict_by_value(dict(word_count_result))
     data.append(sorted_word_count)
 
-    with open(f'news_phishing_{search_keyword}.json', 'w', encoding='utf-8') as f :
-        json.dump(data, f,ensure_ascii = False, indent = 4)
+    with open(f'news_phishing_{search_keyword}.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 driver.close()
