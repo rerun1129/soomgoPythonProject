@@ -109,7 +109,7 @@ for search_keyword in search_keywords:
     driver.maximize_window()
     infinite_to_end_scrolling()
 
-    titles = driver.find_elements(By.CSS_SELECTOR, '.news_contents > a:nth-child(2)')
+    titles = driver.find_elements(By.CSS_SELECTOR, '.news_contents .news_tit')
     if not titles:
         continue
     contents = driver.find_elements(By.CSS_SELECTOR, '.news_dsc .dsc_wrap > a')
